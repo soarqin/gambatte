@@ -594,9 +594,9 @@ private:
 	jmap_t jaMap;
 	jmap_t jhMap;
 
-	bool handleEvents(BlitterWrapper &blitter);
+	bool handleEvents(BlitterWrapper &blitter, TurboSkip &turboSkip);
 	int run(long sampleRate, int latency, int periods,
-	        ResamplerInfo const &resamplerInfo, BlitterWrapper &blitter);
+	        ResamplerInfo const &resamplerInfo, BlitterWrapper &blitter, TurboSkip &turboSkip);
 	void refreshKeymaps();
 };
 
@@ -779,8 +779,10 @@ int GambatteSdl::exec(int const argc, char const *const argv[]) {
 	BlitterWrapper blitter(vfOption.filter(),
 	                       scaleOption.scale(), yuvOption.isSet(),
 	                       fsOption.isSet());
+    TurboSkip turboSkip;
+    turboSkip.setSpeed(fastforward_speed);
 
-	init_globals(&gambatte, &blitter); //init global pointers
+	init_globals(&gambatte, &blitter, &turboSkip); //init global pointers
 
 	blitter.setBufferDimensions(); //set appropiate resolution on startup
 
@@ -802,7 +804,7 @@ int GambatteSdl::exec(int const argc, char const *const argv[]) {
 	inputGetter.is = 0;
 
 	return run(rateOption.rate(), latencyOption.latency(), periodsOption.periods(),
-	           resamplerOption.resampler(), blitter);
+	           resamplerOption.resampler(), blitter, turboSkip);
 }
 
 #else //ROM_BROWSER
@@ -967,7 +969,10 @@ int GambatteSdl::exec(int const argc, char const *const argv[]) {
 	                       scaleOption.scale(), yuvOption.isSet(),
 	                       fsOption.isSet());
 
-	init_globals(&gambatte, &blitter); //init global pointers
+    TurboSkip turboSkip;
+    turboSkip.setSpeed(fastforward_speed);
+
+	init_globals(&gambatte, &blitter, &turboSkip); //init global pointers
 
 	blitter.setBufferDimensions(); //set appropiate resolution on startup
 
@@ -987,7 +992,7 @@ int GambatteSdl::exec(int const argc, char const *const argv[]) {
 	}
 
 	return run(rateOption.rate(), latencyOption.latency(), periodsOption.periods(),
-	           resamplerOption.resampler(), blitter);
+	           resamplerOption.resampler(), blitter, turboSkip);
 }
 
 #endif //ROM_BROWSER
@@ -1006,7 +1011,7 @@ void GambatteSdl::refreshKeymaps() {
 	}
 }
 
-bool GambatteSdl::handleEvents(BlitterWrapper &blitter) {
+bool GambatteSdl::handleEvents(BlitterWrapper &blitter, TurboSkip &turboSkip) {
 	JoyData jd;
 	SDL_Event e;
 	
@@ -1072,9 +1077,13 @@ bool GambatteSdl::handleEvents(BlitterWrapper &blitter) {
 					case SDLK_RCTRL: // R button in bittboy - Reset button in PocketGo
 #else
 	#if defined VERSION_GCW0
-					case SDLK_BACKSPACE: // L trigger
-					case SDLK_TAB: // R trigger
+					//case SDLK_BACKSPACE: // L trigger
+					//case SDLK_TAB: // R trigger
+					case SDLK_PAGEDOWN: // R2
+                        turboSkip.setEnabled(!turboSkip.isEnabled());
+                        break;
 	#endif
+					case SDLK_PAGEUP: // L2
 					case SDLK_HOME: // "power flick" in GCW Zero
 					case SDLK_END: // power/suspend button in retrofw
 #endif
@@ -1133,7 +1142,8 @@ static bool isFastForward(Uint8 const *keys) {
 }
 
 int GambatteSdl::run(long const sampleRate, int const latency, int const periods,
-                     ResamplerInfo const &resamplerInfo, BlitterWrapper &blitter) {
+                     ResamplerInfo const &resamplerInfo, BlitterWrapper &blitter,
+                     TurboSkip &turboSkip) {
 	Array<Uint32> const audioBuf(gb_samples_per_frame + gambatte_max_overproduction);
 	AudioOut aout(sampleRate, latency, periods, resamplerInfo, audioBuf.size());
 	FrameWait frameWait;
@@ -1146,7 +1156,7 @@ int GambatteSdl::run(long const sampleRate, int const latency, int const periods
 
 	for (;;) {
 
-		if (handleEvents(blitter))
+		if (handleEvents(blitter, turboSkip))
 			return 0;
 
 		BlitterWrapper::Buf const &vbuf = blitter.inBuf();
@@ -1159,12 +1169,7 @@ int GambatteSdl::run(long const sampleRate, int const latency, int const periods
 		bufsamples += runsamples;
 		bufsamples -= outsamples;
 
-		if (isFastForward(keys)) {
-			if (vidFrameDoneSampleCnt >= 0) {
-				blitter.draw();
-				blitter.present();
-			}
-		} else {
+		if (!turboSkip.skip()) {
 			bool const blit = vidFrameDoneSampleCnt >= 0
 			               && !skipSched.skipNext(audioOutBufLow);
 			if (blit)

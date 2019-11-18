@@ -22,7 +22,9 @@
 #include "savestate.h"
 #include "state_osd_elements.h"
 #include "statesaver.h"
+#include "bootloader.h"
 
+#include <cstdio>
 #include <cstring>
 #include <sstream>
 
@@ -48,6 +50,8 @@ struct GB::Priv {
 	unsigned loadflags;
 
 	Priv() : stateNo(1), loadflags(0) {}
+
+	void full_init();
 };
 
 GB::GB() : p_(new Priv) {}
@@ -57,6 +61,10 @@ GB::~GB() {
 		p_->cpu.saveSavedata();
 
 	delete p_;
+}
+
+std::string GB::getSaveStatePath(int statenum){
+	return statePath(p_->cpu.saveBasePath(), statenum);
 }
 
 std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff_t const pitch,
@@ -76,6 +84,32 @@ std::ptrdiff_t GB::runFor(gambatte::uint_least32_t *const videoBuf, std::ptrdiff
 	     : cyclesSinceBlit;
 }
 
+void GB::Priv::full_init() {
+	SaveState state;
+	cpu.setStatePtrs(state);
+	setInitState(state, cpu.isCgb(), loadflags & GBA_CGB);
+
+	cpu.mem_.bootloader.reset();
+	cpu.mem_.bootloader.set_address_space_start((void*)cpu.rombank0_ptr());
+	cpu.mem_.bootloader.load(cpu.isCgb(), loadflags & GBA_CGB);
+
+	if (cpu.mem_.bootloader.using_bootloader) {
+		uint8_t *ioamhram = (uint8_t*)state.mem.ioamhram.get();
+		uint8_t serialctrl = (cpu.isCgb() || loadflags & GBA_CGB) ? 0x7C : 0x7E;
+		state.cpu.pc = 0x0000;
+		// the hw registers must be zeroed out to prevent the logo from being garbled
+		std::memset((void*)(ioamhram + 0x100), 0x00, 0x100);
+		//init values taken from SameBoy
+		ioamhram[0x100] = 0xCF;//joypad initial value
+		ioamhram[0x102] = serialctrl;//serialctrl
+		ioamhram[0x148] = 0xFC;//object palette 0
+		ioamhram[0x149] = 0xFC;//object palette 1
+	}
+
+	cpu.loadState(state);
+	cpu.loadSavedata();
+}
+
 void GB::reset() {
 	if (p_->cpu.loaded()) {
 		p_->cpu.saveSavedata();
@@ -92,6 +126,10 @@ void GB::setInputGetter(InputGetter *getInput) {
 	p_->cpu.setInputGetter(getInput);
 }
 
+void GB::setBootloaderGetter(bool (*getter)(void* userdata, bool isgbc, uint8_t* data, uint32_t max_size)) {
+	p_->cpu.mem_.bootloader.set_bootloader_getter(getter);
+}
+
 void GB::setSaveDir(std::string const &sdir) {
 	p_->cpu.setSaveDir(sdir);
 }
@@ -104,14 +142,9 @@ LoadRes GB::load(std::string const &romfile, unsigned const flags) {
 	                                     flags & FORCE_DMG,
 	                                     flags & MULTICART_COMPAT);
 	if (loadres == LOADRES_OK) {
-		SaveState state;
-		p_->cpu.setStatePtrs(state);
-		p_->loadflags = flags;
-		setInitState(state, p_->cpu.isCgb(), flags & GBA_CGB);
-		p_->cpu.loadState(state);
-		p_->cpu.loadSavedata();
+		p_->full_init();
 
-		p_->stateNo = 1;
+		p_->stateNo = 0;
 		p_->cpu.setOsdElement(transfer_ptr<OsdElement>());
 	}
 
@@ -135,6 +168,10 @@ void GB::setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 	p_->cpu.setDmgPaletteColor(palNum, colorNum, rgb32);
 }
 
+void GB::setColorFilter(int activated, int filtercolors[12]) {
+	p_->cpu.setColorFilter(activated, filtercolors);
+}
+
 bool GB::loadState(std::string const &filepath) {
 	if (p_->cpu.loaded()) {
 		p_->cpu.saveSavedata();
@@ -144,6 +181,7 @@ bool GB::loadState(std::string const &filepath) {
 
 		if (StateSaver::loadState(state, filepath)) {
 			p_->cpu.loadState(state);
+			p_->cpu.mem_.bootloader.choosebank(state.mem.ioamhram.get()[0x150] != 0xFF);
 			return true;
 		}
 	}
@@ -160,9 +198,25 @@ bool GB::saveState(gambatte::uint_least32_t const *videoBuf, std::ptrdiff_t pitc
 	return false;
 }
 
+bool GB::saveState_NoOsd(gambatte::uint_least32_t const *videoBuf, std::ptrdiff_t pitch) {
+	if (saveState(videoBuf, pitch, statePath(p_->cpu.saveBasePath(), p_->stateNo))) {
+		return true;
+	}
+
+	return false;
+}
+
 bool GB::loadState() {
 	if (loadState(statePath(p_->cpu.saveBasePath(), p_->stateNo))) {
 		p_->cpu.setOsdElement(newStateLoadedOsdElement(p_->stateNo));
+		return true;
+	}
+
+	return false;
+}
+
+bool GB::loadState_NoOsd() {
+	if (loadState(statePath(p_->cpu.saveBasePath(), p_->stateNo))) {
 		return true;
 	}
 
@@ -188,6 +242,15 @@ void GB::selectState(int n) {
 	if (p_->cpu.loaded()) {
 		std::string const &path = statePath(p_->cpu.saveBasePath(), p_->stateNo);
 		p_->cpu.setOsdElement(newSaveStateOsdElement(path, p_->stateNo));
+	}
+}
+
+void GB::selectState_NoOsd(int n) {
+	n -= (n / 10) * 10;
+	p_->stateNo = n < 0 ? n + 10 : n;
+
+	if (p_->cpu.loaded()) {
+		std::string const &path = statePath(p_->cpu.saveBasePath(), p_->stateNo);
 	}
 }
 

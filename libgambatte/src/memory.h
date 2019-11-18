@@ -21,6 +21,7 @@
 
 #include "mem/cartridge.h"
 #include "interrupter.h"
+#include "bootloader.h"
 #include "pakinfo.h"
 #include "sound.h"
 #include "tima.h"
@@ -33,6 +34,7 @@ class FilterInfo;
 
 class Memory {
 public:
+	Bootloader bootloader;
 	explicit Memory(Interrupter const &interrupter);
 	bool loaded() const { return cart_.loaded(); }
 	char const * romTitle() const { return cart_.romTitle(); }
@@ -43,6 +45,7 @@ public:
 	void loadSavedata() { cart_.loadSavedata(); }
 	void saveSavedata() { cart_.saveSavedata(); }
 	std::string const saveBasePath() const { return cart_.saveBasePath(); }
+	void *rombank0_ptr() const { return cart_.romdata(0); }
 
 	void setOsdElement(transfer_ptr<OsdElement> osdElement) {
 		lcd_.setOsdElement(osdElement);
@@ -106,6 +109,10 @@ public:
 
 	void setDmgPaletteColor(int palNum, int colorNum, unsigned long rgb32) {
 		lcd_.setDmgPaletteColor(palNum, colorNum, rgb32);
+	}
+
+	void setColorFilter(int activated, int filtercolors[12]) {
+		lcd_.setColorFilter(activated, filtercolors);
 	}
 
 	void setGameGenie(std::string const &codes) { cart_.setGameGenie(codes); }

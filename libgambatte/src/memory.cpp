@@ -21,6 +21,7 @@
 #include "savestate.h"
 #include "sound.h"
 #include "video.h"
+#include "bootloader.h"
 
 #include <algorithm>
 
@@ -999,6 +1000,10 @@ void Memory::nontrivial_ff_write(unsigned const p, unsigned data, unsigned long 
 			ioamhram_[0x14F] = 0xFE | data;
 		}
 
+		return;
+	case 0x50:
+		bootloader.call_FF50();
+		ioamhram_[0x150] = 0xFF;
 		return;
 	case 0x51:
 		dmaSource_ = data << 8 | (dmaSource_ & 0xFF);

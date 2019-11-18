@@ -23,16 +23,23 @@
 
 using namespace gambatte;
 
+int color_filter = 0;
+int filter_value[12] = {135, 20, 0, 25, 0, 125, 20, 25, 0, 20, 105, 30};
+
 namespace {
 
 unsigned long gbcToRgb32(unsigned const bgr15) {
-	unsigned long const r = bgr15       & 0x1F;
-	unsigned long const g = bgr15 >>  5 & 0x1F;
-	unsigned long const b = bgr15 >> 10 & 0x1F;
+	unsigned long const r = (bgr15       & 0x1F) << 3;
+	unsigned long const g = (bgr15 >>  5 & 0x1F) << 3;
+	unsigned long const b = (bgr15 >> 10 & 0x1F) << 3;
 
-	return ((r * 13 + g * 2 + b) >> 1) << 16
-	| (g * 3 + b) << 9
-	| (r * 3 + g * 2 + b * 11) >> 1;
+	if(color_filter == 1){
+		return  ((((r * filter_value[0] + g * filter_value[1] + b * filter_value[2]) >> 8) + filter_value[3]) & 0xff) << 16 |
+				((((r * filter_value[4] + g * filter_value[5] + b * filter_value[6]) >> 8) + filter_value[7]) & 0xff) << 8 |
+				((((r * filter_value[8] + g * filter_value[9] + b * filter_value[10]) >> 8) + filter_value[11]) & 0xff);
+	} else {
+		return r << 16 | g << 8 | b;
+	}
 }
 
 /*unsigned long gbcToRgb16(unsigned const bgr15) {
@@ -876,4 +883,14 @@ void LCD::setDmgPaletteColor(unsigned palNum, unsigned colorNum, unsigned long r
 		dmgColorsRgb32_[palNum][colorNum] = rgb32;
 		refreshPalettes();
 	}
+}
+
+void LCD::setColorFilter(int activated, int filtercolors[12]) {
+	color_filter = activated;
+	if(activated == 1) {
+		for (int i = 0; i < 12; ++i) {
+			filter_value[i] = filtercolors[i];
+		}
+	}
+	refreshPalettes();
 }

@@ -84,7 +84,7 @@ bool EnvelopeUnit::nr2Change(unsigned const newNr2) {
 }
 
 bool EnvelopeUnit::nr4Init(unsigned long const cc) {
-	unsigned long period = nr2_ & psg_nr2_step ? nr2_ & psg_nr2_step : 8;
+	unsigned long period = (nr2_ & psg_nr2_step) ? nr2_ & psg_nr2_step : 8;
 
 	if (((cc + 2) & 0x7000) == 0x0000)
 		++period;

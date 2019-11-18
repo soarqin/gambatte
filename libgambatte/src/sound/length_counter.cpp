@@ -40,7 +40,7 @@ void LengthCounter::event() {
 
 void LengthCounter::nr1Change(unsigned const newNr1, unsigned const nr4, unsigned long const cc) {
 	lengthCounter_ = (~newNr1 & lengthMask_) + 1;
-	counter_ = nr4 & psg_nr4_lcen
+	counter_ = (nr4 & psg_nr4_lcen)
 		? ((cc >> 13) + lengthCounter_) << 13
 		: 1 * counter_disabled;
 }

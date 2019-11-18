@@ -68,11 +68,18 @@ public:
 		mem_.setDmgPaletteColor(palNum, colorNum, rgb32);
 	}
 
+	void setColorFilter(int activated, int filtercolors[12]) {
+		mem_.setColorFilter(activated, filtercolors);
+	}
+
 	void setGameGenie(std::string const &codes) { mem_.setGameGenie(codes); }
 	void setGameShark(std::string const &codes) { mem_.setGameShark(codes); }
 
-private:
 	Memory mem_;
+	void *rombank0_ptr() const { return mem_.rombank0_ptr(); }
+
+private:
+	
 	unsigned long cycleCounter_;
 	unsigned short pc_;
 	unsigned short sp;

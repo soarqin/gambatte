@@ -45,6 +45,8 @@
 #include <sys/stat.h>
 #include "../menu.h"
 
+uint32_t turboState = 0;
+
 bool get_bootloader_from_file(void* userdata, bool isgbc, uint8_t* data, uint32_t buf_size)
 {
 	if(biosenabled == 0){
@@ -1073,16 +1075,20 @@ bool GambatteSdl::handleEvents(BlitterWrapper &blitter, TurboSkip &turboSkip) {
 					}
 				} else {
 					switch (e.key.keysym.sym) {
+#if defined VERSION_GCW0
+					case SDLK_BACKSPACE: // R1
+					case SDLK_TAB: // L1
+						turboState |= 2u;
+						turboSkip.setEnabled(turboState != 0);
+						break;
+					case SDLK_PAGEDOWN: // R2
+						turboState ^= 1u;
+						turboSkip.setEnabled(turboState != 0);
+						break;
+#endif
 #if defined VERSION_BITTBOY || defined VERSION_POCKETGO
 					case SDLK_RCTRL: // R button in bittboy - Reset button in PocketGo
 #else
-	#if defined VERSION_GCW0
-					//case SDLK_BACKSPACE: // L trigger
-					//case SDLK_TAB: // R trigger
-					case SDLK_PAGEDOWN: // R2
-                        turboSkip.setEnabled(!turboSkip.isEnabled());
-                        break;
-	#endif
 					case SDLK_PAGEUP: // L2
 					case SDLK_HOME: // "power flick" in GCW Zero
 					case SDLK_END: // power/suspend button in retrofw
@@ -1115,17 +1121,26 @@ bool GambatteSdl::handleEvents(BlitterWrapper &blitter, TurboSkip &turboSkip) {
 					default: break;
 					}
 				}
-				// fallthrough
+				for (std::pair<keymap_t::iterator, keymap_t::iterator> range =
+						keyMap.equal_range(e.key.keysym.sym);
+						range.first != range.second; ++range.first) {
+					inputGetter.is |= range.first->second;
+				}
+				break;
 			case SDL_KEYUP:
 				for (std::pair<keymap_t::iterator, keymap_t::iterator> range =
 						keyMap.equal_range(e.key.keysym.sym);
 						range.first != range.second; ++range.first) {
-					if (e.key.state)
-						inputGetter.is |= range.first->second;
-					else
-						inputGetter.is &= ~range.first->second;
+					inputGetter.is &= ~range.first->second;
 				}
-
+				switch (e.key.keysym.sym) {
+					case SDLK_BACKSPACE: // R1
+					case SDLK_TAB: // L1
+						turboState &= ~2u;
+						turboSkip.setEnabled(turboState != 0);
+						break;
+					default: break;
+				}
 				break;
 			case SDL_QUIT:
 				return true;
@@ -1137,10 +1152,6 @@ bool GambatteSdl::handleEvents(BlitterWrapper &blitter, TurboSkip &turboSkip) {
 static std::size_t const gb_samples_per_frame = 35112;
 static std::size_t const gambatte_max_overproduction = 2064;
 
-static bool isFastForward(Uint8 const *keys) {
-	return keys[SDLK_F9];
-}
-
 int GambatteSdl::run(long const sampleRate, int const latency, int const periods,
                      ResamplerInfo const &resamplerInfo, BlitterWrapper &blitter,
                      TurboSkip &turboSkip) {
@@ -1148,7 +1159,6 @@ int GambatteSdl::run(long const sampleRate, int const latency, int const periods
 	AudioOut aout(sampleRate, latency, periods, resamplerInfo, audioBuf.size());
 	FrameWait frameWait;
 	SkipSched skipSched;
-	Uint8 const *const keys = SDL_GetKeyState(0);
 	std::size_t bufsamples = 0;
 	bool audioOutBufLow = false;
 

@@ -56,7 +56,7 @@ Mix_Chunk *menusound_move = NULL;
 Mix_Chunk *menusound_ok = NULL;
 
 // Default config values
-int selectedscaler = 0, showfps = 0, ghosting = 1, biosenabled = 0, colorfilter = 0, gameiscgb = 0, buttonlayout = 0, stereosound = 0, fastforward_speed = 1;
+int selectedscaler = 0, showfps = 0, ghosting = 1, biosenabled = 0, colorfilter = 0, gameiscgb = 0, buttonlayout = 0, stereosound = 0, fastforward_speed = 2;
 uint32_t menupalblack = 0x000000, menupaldark = 0x505450, menupallight = 0xA8A8A8, menupalwhite = 0xF8FCF8;
 int filtervalue[12] = {135, 20, 0, 25, 0, 125, 20, 25, 0, 20, 105, 30};
 std::string dmgbordername = "DEFAULT", gbcbordername = "DEFAULT", palname = "DEFAULT", filtername = "NONE", currgamename = "DEFAULT";

@@ -15,25 +15,25 @@ extern "C" {
 #define NUM_GS_CODES 20
 
 #ifdef VERSION_GCW0
-	#define BLINK_SPEED 12
-	#define FOOTER_ALT_SPEED 100
-	#define TEXTANIM_DELAY 46
-	#define TEXTANIM_SPEED 10
+    #define BLINK_SPEED 12
+    #define FOOTER_ALT_SPEED 100
+    #define TEXTANIM_DELAY 46
+    #define TEXTANIM_SPEED 10
 #elif VERSION_RETROFW
-	#define BLINK_SPEED 8
-	#define FOOTER_ALT_SPEED 80
-	#define TEXTANIM_DELAY 36
-	#define TEXTANIM_SPEED 6
+    #define BLINK_SPEED 8
+    #define FOOTER_ALT_SPEED 80
+    #define TEXTANIM_DELAY 36
+    #define TEXTANIM_SPEED 6
 #elif defined VERSION_BITTBOY || defined VERSION_POCKETGO
-	#define BLINK_SPEED 16
-	#define FOOTER_ALT_SPEED 156
-	#define TEXTANIM_DELAY 66
-	#define TEXTANIM_SPEED 13
+    #define BLINK_SPEED 16
+    #define FOOTER_ALT_SPEED 156
+    #define TEXTANIM_DELAY 66
+    #define TEXTANIM_SPEED 13
 #else
-	#define BLINK_SPEED 12
-	#define FOOTER_ALT_SPEED 100
-	#define TEXTANIM_DELAY 50
-	#define TEXTANIM_SPEED 10
+    #define BLINK_SPEED 12
+    #define FOOTER_ALT_SPEED 100
+    #define TEXTANIM_DELAY 50
+    #define TEXTANIM_SPEED 10
 #endif
 
 #include <SDL/SDL.h>
@@ -44,24 +44,24 @@ extern "C" {
 typedef struct Menu_t menu_t;
 
 typedef struct {
-	char *text;
-	char **entries;
-	int is_shiftable;
-	int selectable;
-	int n_entries;
-	int selected_entry;
-	void (*callback)(menu_t *);
+    char *text;
+    char **entries;
+    int is_shiftable;
+    int selectable;
+    int n_entries;
+    int selected_entry;
+    void (*callback)(menu_t *);
 } menu_entry_t;
 
 struct Menu_t {
-	char *header;
-	char *title;
-	menu_entry_t **entries;
-	int n_entries;
-	int selected_entry;
-	int i;
-	int quit;
-	void (*back_callback)(menu_t *);
+    char *header;
+    char *title;
+    menu_entry_t **entries;
+    int n_entries;
+    int selected_entry;
+    int i;
+    int quit;
+    void (*back_callback)(menu_t *);
 };
 
 extern SDL_Surface *menuscreen;

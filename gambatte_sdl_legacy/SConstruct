@@ -52,30 +52,30 @@ env = Environment(CPPPATH = ['src', '../libgambatte/include', '../common'],
 env.ParseConfig(sdl_path + 'sdl-config --cflags --libs')
 
 sourceFiles = Split('''
-			src/audiosink.cpp
-			src/blitterwrapper.cpp
-			src/parser.cpp
-			src/sdlblitter.cpp
-			src/str_to_sdlkey.cpp
-			src/usec.cpp
-			SFont.c
-			menu.cpp
-			libmenu.cpp
-			scaler.c
-			../common/adaptivesleep.cpp
-			../common/resample/src/chainresampler.cpp
-			../common/resample/src/i0.cpp
-			../common/resample/src/kaiser50sinc.cpp
-			../common/resample/src/kaiser70sinc.cpp
-			../common/resample/src/makesinckernel.cpp
-			../common/resample/src/resamplerinfo.cpp
-			../common/resample/src/u48div.cpp
-			../common/rateest.cpp
-			../common/skipsched.cpp
-			../common/videolink/rgb32conv.cpp
-			../common/videolink/vfilterinfo.cpp
-			../libgambatte/libgambatte.a
-		   ''')
+            src/audiosink.cpp
+            src/blitterwrapper.cpp
+            src/parser.cpp
+            src/sdlblitter.cpp
+            src/str_to_sdlkey.cpp
+            src/usec.cpp
+            SFont.c
+            menu.cpp
+            libmenu.cpp
+            scaler.c
+            ../common/adaptivesleep.cpp
+            ../common/resample/src/chainresampler.cpp
+            ../common/resample/src/i0.cpp
+            ../common/resample/src/kaiser50sinc.cpp
+            ../common/resample/src/kaiser70sinc.cpp
+            ../common/resample/src/makesinckernel.cpp
+            ../common/resample/src/resamplerinfo.cpp
+            ../common/resample/src/u48div.cpp
+            ../common/rateest.cpp
+            ../common/skipsched.cpp
+            ../common/videolink/rgb32conv.cpp
+            ../common/videolink/vfilterinfo.cpp
+            ../libgambatte/libgambatte.a
+           ''')
 
 conf = env.Configure()
 conf.CheckLib('z')
